@@ -252,6 +252,21 @@ void ble_tizenrt_scatternet_handle_callback_msg(T_TIZENRT_APP_CALLBACK_MSG callb
             os_mem_free(profile);
         }
 		    break;
+
+        case BLE_TIZENRT_CALLBACK_TYPE_MTU_UPDATE:
+        {
+            T_TIZENRT_MTU_UDPATE_CALLBACK_DATA *mtu_update = callback_msg.u.buf;
+            if(mtu_update != NULL && server_init_parm.mtu_update_cb)
+            {
+                trble_server_mtu_update_t p_func = server_init_parm.mtu_update_cb;
+                p_func(mtu_update->conn_id, mtu_update->mtu_size);
+            } else {
+                debug_print("NULL connected callback \n");
+            }
+            os_mem_free(mtu_update);
+        }
+            break;
+
 		default:
             debug_print("msg type : 0x%x \n", callback_msg.type);
             break;
@@ -447,13 +462,17 @@ int ble_tizenrt_scatternet_handle_upstream_msg(uint16_t subtype, void *pdata)
         {
             ret = le_adv_start();
             if(GAP_CAUSE_SUCCESS == ret)
-                debug_print("[Upstream] Start Adv Success \n");
+                dbg("[Upstream] Start Adv Success \n");
             else
-                debug_print("[Upstream] Start Adv Fail !! \n");   
+                dbg("[Upstream] Start Adv Fail !! 0x%x \n", ret);
         }
 			break;
 		case BLE_TIZENRT_MSG_STOP_ADV:
 			ret = le_adv_stop();
+			if(GAP_CAUSE_SUCCESS == ret)
+                           dbg("[Upstream] Stop Adv Success \n");
+                       else
+                           dbg("[Upstream] Stop Adv Fail !! 0x%x \n", ret);
 			break;
         case BLE_TIZENRT_MSG_DISCONNECT:
         {
@@ -931,6 +950,22 @@ void ble_tizenrt_scatternet_app_handle_authen_state_evt(uint8_t conn_id, uint8_t
 void ble_tizenrt_scatternet_app_handle_conn_mtu_info_evt(uint8_t conn_id, uint16_t mtu_size)
 {
     APP_PRINT_INFO2("ble_tizenrt_scatternet_app_handle_conn_mtu_info_evt: conn_id %d, mtu_size %d", conn_id, mtu_size);
+    T_TIZENRT_MTU_UDPATE_CALLBACK_DATA *mtu_data = os_mem_alloc(0, sizeof(T_TIZENRT_MTU_UDPATE_CALLBACK_DATA));
+
+    if(mtu_data)
+    {
+        mtu_data->conn_id = conn_id;
+        mtu_data->mtu_size = mtu_size;
+        if(ble_tizenrt_scatternet_send_callback_msg(BLE_TIZENRT_CALLBACK_TYPE_MTU_UPDATE, mtu_data) == false)
+        {
+            os_mem_free(mtu_data);
+            debug_print("callback msg send fail \n");
+        } else {
+            debug_print("Memory allocation failed \n");
+        }
+        } else {
+            debug_print("Memory allocation failed \n");
+    }
 }
 
 /**

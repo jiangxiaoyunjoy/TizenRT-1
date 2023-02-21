@@ -34,6 +34,8 @@ extern trble_server_init_config server_init_parm;
 extern bool is_server_init;
 extern uint16_t server_profile_count;
 extern T_ATTRIB_APPL *tizenrt_ble_service_tbl;
+extern TIZENERT_SRV_CNT tizenrt_ble_srv_count;
+extern TIZENERT_SRV_DATABASE tizenrt_ble_srv_database[7];
 
 rtk_bt_le_conn_ind_t *ble_tizenrt_scatternet_conn_ind = NULL;
 
@@ -47,13 +49,13 @@ trble_result_e rtw_ble_combo_init(trble_client_init_config* init_client, trble_s
         return TRBLE_INVALID_STATE;
     }
 
-    client_init_parm = osif_mem_alloc(0, sizeof(trble_client_init_config));
+    client_init_parm = (trble_client_init_config *)osif_mem_alloc(0, sizeof(trble_client_init_config));
     if (client_init_parm == NULL) {
         debug_print("Memory allocation failed \n");
         return TRBLE_FAIL;
     }
 
-    ble_tizenrt_scatternet_conn_ind = osif_mem_alloc(0, sizeof(rtk_bt_le_conn_ind_t));
+    ble_tizenrt_scatternet_conn_ind = (rtk_bt_le_conn_ind_t *)osif_mem_alloc(0, sizeof(rtk_bt_le_conn_ind_t));
     if (ble_tizenrt_scatternet_conn_ind == NULL) {
         debug_print("Memory allocation failed \n");
         return TRBLE_FAIL;
@@ -100,6 +102,8 @@ trble_result_e rtw_ble_combo_deinit(void)
     ble_tizenrt_scatternet_conn_ind = NULL;
 
 	osif_mem_free(tizenrt_ble_service_tbl);
+	memset(tizenrt_ble_srv_database, 0, (7 * sizeof(TIZENERT_SRV_DATABASE)));
+	tizenrt_ble_srv_count = 0;
     is_server_init = false;
     return TRBLE_SUCCESS; 
 }

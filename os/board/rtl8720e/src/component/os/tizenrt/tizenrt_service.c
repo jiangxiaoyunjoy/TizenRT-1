@@ -134,12 +134,12 @@ void _tizenrt_timer_wrapper(void *timer)
 
 /********************* os depended service ********************/
 
-u8 *_tizenrt_malloc(u32 sz)
+void *_tizenrt_malloc(u32 sz)
 {
 	return kmm_malloc(sz);
 }
 
-u8 *_tizenrt_zmalloc(u32 sz)
+void *_tizenrt_zmalloc(u32 sz)
 {
 	return kmm_zalloc(sz);
 }
@@ -179,6 +179,9 @@ static void _tizenrt_init_sema(_sema *sema, int init_val)
 			DBG_ERR("Failed to kmm_zalloc\n");
 			return;
 		}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+		DEBUG_SET_CALLER_ADDR(*sema);
+#endif
 	} else {
 		DBG_ERR("Already inited\n");
 		return;
@@ -245,6 +248,9 @@ static void _tizenrt_mutex_init(_mutex *pmutex)
 			DBG_ERR("Failed\n");
 			goto err_exit;
 		}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+		DEBUG_SET_CALLER_ADDR(*pmutex);
+#endif
 	}
 	err = pthread_mutexattr_init(&mutex_attr);
 	if (err) {
@@ -274,6 +280,9 @@ err_exit:
 			DBG_ERR("Failed\n");
 			return;
 		}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+		DEBUG_SET_CALLER_ADDR(*pmutex);
+#endif
 	}
 	sem_init(*pmutex, 0, 1);
 	sem_setprotocol(*pmutex, SEM_PRIO_NONE);
@@ -334,6 +343,8 @@ static int _tizenrt_mutex_get_timeout(_mutex *plock, u32 timeout_ms)
 }
 
 #if 1 //Justin: temporary solution for enter critical code for tizenRT
+void save_and_cli_temp(void);
+void restore_flags_temp(void);
 void save_and_cli_temp()
 {
 	if(flagcnt){
@@ -441,6 +452,9 @@ static void _tizenrt_spinlock_init(_lock *plock)
 			DBG_ERR("Failed\n");
 			return;
 		}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+		DEBUG_SET_CALLER_ADDR(*plock);
+#endif
 	}
 	sem_init(*plock, 0, 1);
 	sem_setprotocol(*plock, SEM_PRIO_NONE);
@@ -794,7 +808,7 @@ err_exit:
 		DBG_ERR("%s fail\n", name);
 		return _FAIL;
 	}
-	ptask->task = pid;
+	ptask->task = (pid_t)pid;
 	ptask->task_name = name;
 	return _SUCCESS;
 #endif
@@ -881,6 +895,18 @@ static void _tizenrt_resume_task(void *task)
 	return;
 }
 
+static void _tizenrt_suspend_task_all(void)
+{
+	DBG_INFO("\n");
+	return;
+}
+
+static void _tizenrt_resume_task_all(void)
+{
+	DBG_INFO("\n");
+	return;
+}
+
 static void _tizenrt_thread_enter(char *name)
 {
 	DBG_INFO("RTKTHREAD %s\n", name);
@@ -896,19 +922,25 @@ static void _tizenrt_thread_exit(void)
 #endif
 }
 
-_timerHandle _tizenrt_timerCreate(const signed char *pcTimerName, osdepTickType xTimerPeriodInTicks, u32 uxAutoReload, void *pvTimerID, TIMER_FUN pxCallbackFunction)
+_timerHandle _tizenrt_timerCreate(const signed char *pcTimerName, osdepTickType xTimerPeriodInTicks, uint32_t uxAutoReload, void *pvTimerID, TIMER_FUN pxCallbackFunction)
 {
 	struct timer_list_priv *timer = (struct timer_list_priv *)_tizenrt_zmalloc(sizeof(struct timer_list_priv));
 	if (timer == NULL) {
 		DBG_ERR("Fail to alloc priv\n");
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+	DEBUG_SET_CALLER_ADDR(timer);
+#endif
 	timer->work_hdl = (struct work_s *)_tizenrt_zmalloc(sizeof(struct work_s));
 	if (timer->work_hdl == NULL) {
 		DBG_ERR("Fail to alloc timer->work_hdl\n");
 		kmm_free(timer);
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+	DEBUG_SET_CALLER_ADDR(timer->work_hdl);
+#endif
 	timer->live = 0;
 	timer->timevalue = xTimerPeriodInTicks;
 	timer->data = pvTimerID;
@@ -924,12 +956,15 @@ _timerHandle _tizenrt_timerCreate(const signed char *pcTimerName, osdepTickType 
 	}
 
 	struct _tizenrt_timer_entry *timer_entry;
-	timer_entry = _tizenrt_zmalloc(sizeof(struct _tizenrt_timer_entry));
+	timer_entry = (struct _tizenrt_timer_entry *)_tizenrt_zmalloc(sizeof(struct _tizenrt_timer_entry));
 	if (timer_entry == NULL) {
 		kmm_free(timer->work_hdl);
 		kmm_free(timer);
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+	DEBUG_SET_CALLER_ADDR(timer_entry);
+#endif
 	timer_entry->timer = timer;
 
 	_tizenrt_mutex_get(&_tizenrt_timer_mutex);
@@ -1194,9 +1229,9 @@ void vTaskDelay(int ms)
 
 int rtw_printf(const char *format,...)
 {
-	va_list ap;
 	int ret = 0;
 #ifdef CONFIG_DEBUG_LWNL80211_VENDOR_DRV_INFO
+	va_list ap;
 	va_start(ap, format);
 #ifdef CONFIG_LOGM
 	ret = logm_internal(LOGM_NORMAL, LOGM_IDX, LOGM_INF, format, ap);
@@ -1296,6 +1331,8 @@ const struct osdep_service_ops osdep_service = {
 	_tizenrt_get_priority_task,	//rtw_get_priority_task
 	_tizenrt_suspend_task,			//rtw_suspend_task
 	_tizenrt_resume_task,			//rtw_resume_task
+	_tizenrt_suspend_task_all,		//rtw_suspend_task_all
+	_tizenrt_resume_task_all,		//rtw_resume_task_all
 
 	_tizenrt_thread_enter,		//rtw_thread_enter
 	_tizenrt_thread_exit,		//rtw_thread_exit
@@ -1320,4 +1357,3 @@ const struct osdep_service_ops osdep_service = {
 	NULL,						// rtw_create_secure_context
 	NULL,						//rtw_get_current_TaskHandle
 };
-

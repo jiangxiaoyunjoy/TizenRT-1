@@ -102,9 +102,11 @@ typedef struct {
 } ble_server_gatt_t;
 
 typedef void (*ble_server_connected_t)(ble_conn_handle con_handle, ble_server_connection_type_e conn_type, uint8_t mac[BLE_BD_ADDR_MAX_LEN]);
+typedef void (*ble_server_mtu_update_t)(ble_conn_handle con_handle, uint16_t mtu_size);
 
 typedef struct {
 	ble_server_connected_t connected_cb;
+	ble_server_mtu_update_t mtu_update_cb;
 	// true : Secure Manager is enabled. Bondable.
 	// false : Secure Manager is disabled. Requesting Pairing will be rejected. Non-Bondable.
 	bool is_secured_connect_allowed; 
@@ -147,6 +149,14 @@ The random delay is a pseudo-random value from 0ms to 10ms that is automatically
 This randomness helps reduce the possibility of collisions between advertisements of different devices
 */
 ble_result_e ble_server_set_adv_interval(unsigned int interval);
+
+/* Set tx power for advertising
+   Arguement txpower: 
+			0x00(-9dBm) ~ 0x31(15.5dBm) 
+			step : 0.5dBm
+			tested value: 0x06, 0x1A, 0x26
+*/
+ble_result_e ble_server_set_adv_tx_power(uint8_t txpower);
 
 ble_result_e ble_server_start_adv(void);
 ble_result_e ble_server_stop_adv(void);

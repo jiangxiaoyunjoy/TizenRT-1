@@ -40,7 +40,6 @@
 #include "ameba_soc.h"
 
 #define MHZ_TICK_CNT (1000000)
-
 #define configCPU_CLOCK_HZ								SystemCoreClock
 /*----------------------------------------------------------------------------
   Clock Variable definitions

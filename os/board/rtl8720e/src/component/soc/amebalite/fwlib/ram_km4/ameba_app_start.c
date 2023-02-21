@@ -12,6 +12,7 @@
 #include <tinyara/mm/heap_regioninfo.h>
 
 #include "ameba_soc.h"
+#include "amebalite_reboot_reason.h"
 //#include "psram_reserve.h"
 
 #if defined(CONFIG_EXAMPLE_CM_BACKTRACE) && CONFIG_EXAMPLE_CM_BACKTRACE
@@ -41,18 +42,21 @@ extern int main(void);
 extern u32 GlobalDebugEnable;
 
 #ifdef CONFIG_PLATFORM_TIZENRT_OS
-extern unsigned int __StackStart;
+extern unsigned int _sidle_stack;
+extern unsigned int _sext_heap_start;
+extern unsigned int _sint_heap_start;
 extern unsigned int __StackLimit;
-extern uint8_t __psram_heap_buffer_start__[];
 extern unsigned int __PsramStackLimit;
 void NS_ENTRY BOOT_IMG3(void);
 void app_init_psram(void);
 
-#define IDLE_STACK ((uintptr_t)&__StackStart+CONFIG_IDLETHREAD_STACKSIZE-4)
-#define HEAP_BASE  ((uintptr_t)&__StackStart+CONFIG_IDLETHREAD_STACKSIZE)
+#define IDLE_STACK ((uintptr_t)&_sidle_stack + CONFIG_IDLETHREAD_STACKSIZE - 4)
+#define HEAP_BASE  ((uintptr_t)&_sint_heap_start)
 #define HEAP_LIMIT ((uintptr_t)&__StackLimit)
-#define PSRAM_HEAP_BASE ((uintptr_t)&__psram_heap_buffer_start__)
+#define PSRAM_HEAP_BASE ((uintptr_t)&_sext_heap_start)
 #define PSRAM_HEAP_LIMIT ((uintptr_t)&__PsramStackLimit)
+
+const uintptr_t g_idle_topstack = IDLE_STACK;
 
 void os_heap_init(void){
 	kregionx_start[0] = (void *)HEAP_BASE;
@@ -985,7 +989,7 @@ void app_mpu_s_nocache_init(void)
 #endif
 }
 
-#ifdef CONFIG_AMEBAD_TRUSTZONE
+#ifdef CONFIG_AMEBALITE_TRUSTZONE
 void app_hardfualt_s_prehanlder(uint32_t fault_id)
 {
 	//write reboot reason, TrustZone watchdog
@@ -1257,6 +1261,10 @@ void app_start(void)
 	app_psram_suspend();
 #endif
 
+#ifdef CONFIG_AMEBALITE_TRUSTZONE
+	Secure_VectorTableOverride(app_hardfualt_s_prehanlder);
+#endif
+
 #ifdef CONFIG_PLATFORM_TIZENRT_OS
 #ifdef CONFIG_ARMV8M_MPU
 	/* Initialize number of mpu regions for board specific purpose */
@@ -1296,10 +1304,10 @@ const u8 RAM_IMG2_VALID_PATTEN[20] = {
 	(FW_INFO_RSV3),
 	(FW_INFO_RSV4)
 };
-
+extern VOID SOCPS_WakeFromPG_KM4(VOID);
 IMAGE2_ENTRY_SECTION
 RAM_START_FUNCTION Img2EntryFun0 = {
 	app_start,
-	NULL,//BOOT_RAM_WakeFromPG,
+	SOCPS_WakeFromPG_KM4,
 	(u32)NewVectorTable
 };

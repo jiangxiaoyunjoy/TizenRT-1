@@ -86,7 +86,8 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 
 #ifdef CONFIG_HAVE_FILENAME
 #define ASSERT_INFO(f, fmt, ...) \
-	{ if (!(f))	{ \
+	{ \
+		if (!(f)) { \
 			  snprintf(assert_info_str, CONFIG_STDIO_BUFFER_SIZE, fmt, ##__VA_ARGS__); \
 			  up_assert((const uint8_t *)__FILE__, (int)__LINE__); \
 		} \
@@ -103,6 +104,14 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 
 #ifdef CONFIG_DEBUG
 
+#define DEBUGASSERT_INFO(f, fmt, ...) \
+	{ \
+		if (!(f)) { \
+			  snprintf(assert_info_str, CONFIG_STDIO_BUFFER_SIZE, fmt, ##__VA_ARGS__); \
+			  up_assert((const uint8_t *)__FILE__, (int)__LINE__); \
+		} \
+	}
+
 #define DEBUGASSERT(f) \
 	{ if (!(f)) up_assert((const uint8_t *)__FILE__, (int)__LINE__); }
 
@@ -114,6 +123,7 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 
 #else
 
+#define DEBUGASSERT_INFO(f, fmt, ...)
 #define DEBUGASSERT(f)
 #define DEBUGVERIFY(f) ((void)(f))
 #define DEBUGPANIC()
@@ -123,10 +133,11 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 #else
 
 #define ASSERT_INFO(f, fmt, ...) \
-	{ if (!(f))	{ \
+	{ \
+		if (!(f)) { \
 			  snprintf(assert_info_str, CONFIG_STDIO_BUFFER_SIZE, fmt, ##__VA_ARGS__); \
 			  up_assert(); \
-			} \
+		} \
 	}
 /**
  * @brief Assert if the condition is not true
@@ -157,6 +168,13 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 
 #ifdef CONFIG_DEBUG
 
+#define DEBUGASSERT_INFO(f, fmt, ...) \
+	{ \
+		if (!(f)) { \
+			  snprintf(assert_info_str, CONFIG_STDIO_BUFFER_SIZE, fmt, ##__VA_ARGS__): \
+			  up_assert(); \
+		} \
+	}
 /**
  * @brief Like ASSERT, but only if CONFIG_DEBUG is defined
  *
@@ -186,6 +204,7 @@ extern char assert_info_str[CONFIG_STDIO_BUFFER_SIZE];
 
 #else
 
+#define DEBUGASSERT_INFO(f, fmt, ...)
 #define DEBUGASSERT(f)
 #define DEBUGVERIFY(f) ((void)(f))
 #define DEBUGPANIC()

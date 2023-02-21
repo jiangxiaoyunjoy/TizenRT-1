@@ -195,6 +195,7 @@
 #define HEAPINFO_DETAIL_FREE 4
 #define HEAPINFO_DETAIL_SPECIFIC_HEAP 5
 #define HEAPINFO_INIT_PEAK 6
+#define HEAPINFO_DUMP_HEAP 7
 #define HEAPINFO_PID_ALL -1
 
 #define HEAPINFO_INIT_INFO -1
@@ -214,6 +215,10 @@
 #define KREGION_START (size_t)kregionx_start[0]
 #define KREGION_SIZE  kregionx_size[0]
 #define KREGION_END (KREGION_START + KREGION_SIZE)
+#endif
+
+#if defined(CONFIG_BUILD_FLAT) || defined(__KERNEL__)
+extern bool abort_mode;
 #endif
 
 /* Determines the size of the chunk size/offset type */
@@ -249,6 +254,15 @@ typedef size_t mmsize_t;
 #error Unknown CONFIG_ARCH option, malloc debug feature wont work.
 #endif
 
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+/* This macro updates a caller return address in the 'mem' node.
+ * This will show the real owner of the 'mem' even it's allocated through wrapping APIs of malloc.
+ */
+#define DEBUG_SET_CALLER_ADDR(mem) heapinfo_set_caller_addr(mem, __builtin_return_address(0))
+#else
+#define DEBUG_SET_CALLER_ADDR(mem)
+#endif
+
 /* typedef is used for defining size of address space */
 
 #ifdef CONFIG_DEBUG_MM_HEAPINFO
@@ -264,13 +278,13 @@ typedef size_t mmaddress_t;             /* 32 bit address space */
  */
 
 struct mm_allocnode_s {
-	mmsize_t size;					/* Size of this chunk */
 	mmsize_t preceding;				/* Size of the preceding chunk */
 #ifdef CONFIG_DEBUG_MM_HEAPINFO
 	mmaddress_t alloc_call_addr;			/* malloc call address */
 	pid_t pid;					/* PID info */
 	uint16_t reserved;				/* Reserved for future use. */
 #endif
+	mmsize_t size;					/* Size of this chunk */
 
 };
 
@@ -302,8 +316,13 @@ struct mm_allocnode_s {
 /* This describes a free chunk */
 
 struct mm_freenode_s {
-	mmsize_t size;				/* Size of this chunk */
 	mmsize_t preceding;			/* Size of the preceding chunk */
+#ifdef CONFIG_DEBUG_MM_HEAPINFO
+	mmaddress_t alloc_call_addr;			/* malloc call address */
+	pid_t pid;					/* PID info */
+	uint16_t reserved;				/* Reserved for future use. */
+#endif
+	mmsize_t size;				/* Size of this chunk */
 	FAR struct mm_freenode_s *flink;	/* Supports a doubly linked list */
 	FAR struct mm_freenode_s *blink;
 };
@@ -311,12 +330,7 @@ struct mm_freenode_s {
 /* What is the size of the freenode? */
 
 #define MM_PTR_SIZE sizeof(FAR struct mm_freenode_s *)
-#ifdef CONFIG_DEBUG_MM_HEAPINFO
-#define SIZEOF_MM_FREENODE \
-	(SIZEOF_MM_ALLOCNODE - SIZEOF_MM_MALLOC_DEBUG_INFO + 2 * MM_PTR_SIZE)
-#else
 #define SIZEOF_MM_FREENODE (SIZEOF_MM_ALLOCNODE + 2 * MM_PTR_SIZE)
-#endif
 
 #define CHECK_FREENODE_SIZE \
 	DEBUGASSERT(sizeof(struct mm_freenode_s) == SIZEOF_MM_FREENODE)
@@ -440,6 +454,9 @@ extern uint32_t g_cur_app;
 #else
 #define BASE_HEAP       g_kmmheap
 #endif
+
+// Check if the kernel heap has been locked by any process.
+#define IS_KMM_LOCKED()		(g_kmmheap->mm_counts_held > 0 ? 1 : 0)
 
 /****************************************************************************
  * Public Function Prototypes
@@ -674,11 +691,14 @@ void mm_addfreechunk(FAR struct mm_heap_s *heap, FAR struct mm_freenode_s *node)
 
 int mm_size2ndx(size_t size);
 
+void mm_dump_heap_region(uint32_t start, uint32_t end);
+int heap_dbg(const char *fmt, ...);
 #ifdef CONFIG_DEBUG_MM_HEAPINFO
 /* Functions contained in kmm_mallinfo.c . Used to display memory allocation details */
 void heapinfo_parse_heap(FAR struct mm_heap_s *heap, int mode, pid_t pid);
 /* Funciton to add memory allocation info */
 void heapinfo_update_node(FAR struct mm_allocnode_s *node, mmaddress_t caller_retaddr);
+void heapinfo_set_caller_addr(void *address, mmaddress_t caller_retaddr);
 
 void heapinfo_add_size(struct mm_heap_s *heap, pid_t pid, mmsize_t size);
 void heapinfo_subtract_size(struct mm_heap_s *heap, pid_t pid, mmsize_t size);
@@ -686,6 +706,7 @@ void heapinfo_update_total_size(struct mm_heap_s *heap, mmsize_t size, pid_t pid
 void heapinfo_exclude_stacksize(void *stack_ptr);
 void heapinfo_peak_init(struct mm_heap_s *heap);
 void heapinfo_dealloc_tcbinfo(void *address, pid_t pid);
+void heapinfo_dump_heap(struct mm_heap_s *heap);
 #ifdef CONFIG_HEAPINFO_USER_GROUP
 void heapinfo_update_group(mmsize_t size, pid_t pid);
 void heapinfo_update_group_info(pid_t pid, int group, int type);
@@ -838,6 +859,17 @@ void *zalloc_at(int heap_index, size_t size);
 #define zalloc_at(heap_index, size)              zalloc(size)
 #endif
 
+#ifdef CONFIG_MEM_LEAK_CHECKER
+struct mem_leak_checker_info_s {
+	void *stack_top;
+	void *stack_bottom;
+	struct mm_allocnode_s **heap_start;
+	struct mm_allocnode_s **heap_end;
+	void *heap;
+	int regions;
+};
+int run_mem_leak_checker(int checker_pid, char *bin_name);
+#endif
 /**
  * @brief Free the memory from specified user heap.
  * @details @b #include <tinyara/mm/mm.h>\n

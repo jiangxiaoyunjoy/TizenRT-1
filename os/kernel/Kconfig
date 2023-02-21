@@ -1004,6 +1004,11 @@ config LOG_DUMP
 
 if LOG_DUMP
 
+config LOG_DUMP_PRIO
+	int "Log dump comrpess thread priority"
+	range 0 250
+	default 200
+
 config LOG_DUMP_CHUNK_SIZE
 	int "Log dump chunk size in bytes"
 	range 0 LOG_DUMP_MAX_SIZE
@@ -1020,5 +1025,9 @@ config LOG_DUMP_MEMCHECK_SIZE
 config LOG_DUMP_MAX_FREE_HEAP
 	int "Maximum percent of memory occupied by logs compared to free heap"
 	default 20
+
+config LOG_DUMP_NUMBUFS
+	int "Number of buffers to reserve for log dump"
+	default 2
 
 endif # LOG_DUMP

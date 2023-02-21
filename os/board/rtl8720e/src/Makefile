@@ -92,8 +92,6 @@ ifeq ($(CONFIG_AMEBALITE_WIFI),y)
 include component/wifi/api/Make.defs
 include component/wifi/promisc/Make.defs
 include component/wifi/wpa_supplicant/wpa_supplicant/Make.defs
-include component/os/os_dep/Make.defs
-include component/os/tizenrt/Make.defs
 include component/soc/amebalite/misc/Make.defs
 endif
 
@@ -151,7 +149,8 @@ CFLAGS += -I$(COMPONENT_DIR)/wifi/wifi_config
 CFLAGS += -I$(COMPONENT_DIR)/wifi/wifi_fw/amebalite/include
 CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/include
 CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hal/phydm
-CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hal/rtl8720a
+CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hal/phy_g6/bb
+CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hal/rtl8720e
 CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/osdep
 CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hal
 CFLAGS += -I$(COMPONENT_DIR)/wifi/driver/src/hci

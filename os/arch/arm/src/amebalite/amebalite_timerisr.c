@@ -68,6 +68,11 @@
 
 #include "chip.h"
 
+/*----------------------------------------------------------------------------
+  Clock Variable definitions
+ *----------------------------------------------------------------------------*/
+extern uint32_t SystemCoreClock;
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -79,11 +84,9 @@
  *
  */
 
-
 /* The size of the reload field is 24 bits.  Verify that the reload value
  * will fit in the reload register.
  */
-extern uint32_t SystemCoreClock; 
 
 #define SYSTICK_RELOAD ((SystemCoreClock / CLK_TCK) - 1)
 

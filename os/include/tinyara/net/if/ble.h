@@ -103,6 +103,7 @@ typedef enum {
 	LWNL_REQ_BLE_SET_ADV_RESP,
 	LWNL_REQ_BLE_SET_ADV_TYPE,
 	LWNL_REQ_BLE_SET_ADV_INTERVAL,
+	LWNL_REQ_BLE_SET_ADV_TXPOWER,
 	LWNL_REQ_BLE_START_ADV,
 	LWNL_REQ_BLE_STOP_ADV,
 	LWNL_REQ_BLE_UNKNOWN
@@ -281,9 +282,11 @@ typedef enum {
 } trble_server_connection_type_e;
 
 typedef void (*trble_server_connected_t)(trble_conn_handle con_handle, trble_server_connection_type_e conn_type, uint8_t mac[TRBLE_BD_ADDR_MAX_LEN]);
+typedef void (*trble_server_mtu_update_t)(trble_conn_handle con_handle,  uint16_t mtu_size);
 
 typedef struct {
 	trble_server_connected_t connected_cb;
+	trble_server_mtu_update_t mtu_update_cb;
 	// true : Secure Manager is enabled. Bondable.
 	// false : Secure Manager is disabled. Requesting Pairing will be rejected. Non-Bondable.
 	bool is_secured_connect_allowed;
@@ -350,6 +353,7 @@ typedef trble_result_e (*trble_set_adv_data)(struct bledev *dev, trble_data *dat
 typedef trble_result_e (*trble_set_adv_resp)(struct bledev *dev, trble_data *data);
 typedef trble_result_e (*trble_set_adv_type)(struct bledev *dev, trble_adv_type_e adv_type, trble_addr *addr);
 typedef trble_result_e (*trble_set_adv_interval)(struct bledev *dev, uint16_t interval);
+typedef trble_result_e (*trble_set_adv_txpower)(struct bledev *dev, uint8_t txpower);
 typedef trble_result_e (*trble_start_adv)(struct bledev *dev);
 typedef trble_result_e (*trble_stop_adv)(struct bledev *dev);
 
@@ -402,6 +406,7 @@ struct trble_ops {
 	trble_set_adv_resp set_adv_resp;
 	trble_set_adv_type set_adv_type;
 	trble_set_adv_interval set_adv_interval;
+	trble_set_adv_txpower set_adv_txpower;
 	trble_start_adv start_adv;
 	trble_stop_adv stop_adv;
 };
