@@ -181,13 +181,17 @@ int freertos_ready_to_sleep(void)
 	}
 
 #if defined (ARM_CORE_CM4)
-
-	if (sleep_type == SLEEP_PG) {
-		if (ap_status_on() || (HAL_READ8(SYSTEM_CTRL_BASE_LP, REG_LSYS_AP_STATUS_SW) & LSYS_BIT_AP_RUNNING)) {
-			return FALSE;
-		}
-	} else {
-		if (ap_clk_status_on() || (HAL_READ8(SYSTEM_CTRL_BASE_LP, REG_LSYS_AP_STATUS_SW) & LSYS_BIT_AP_RUNNING)) {
+	if ((HAL_READ8(SYSTEM_CTRL_BASE_LP, REG_LSYS_AP_STATUS_SW) & LSYS_BIT_AP_ENABLE)) {
+		if (!(HAL_READ8(SYSTEM_CTRL_BASE_LP, REG_LSYS_AP_STATUS_SW) & LSYS_BIT_AP_RUNNING)) {
+			if (! ap_status_on()) {
+				pmu_set_sleep_type(SLEEP_PG);
+			} else if (! ap_clk_status_on()) {
+				pmu_set_sleep_type(SLEEP_CG);
+			} else {
+				return FALSE;
+			}
+			pmu_release_wakelock(PMU_OS);
+		} else {
 			return FALSE;
 		}
 	}
@@ -633,38 +637,38 @@ EXIT:
 
 void pmu_acquire_wakelock(uint32_t nDeviceId)
 {
-	u32 PrevStatus;
-#ifndef ARM_CORE_CA32
-	PrevStatus = ulSetInterruptMaskFromISR();
-#else
-	PrevStatus = portDISABLE_INTERRUPTS();
-#endif
-
-	wakelock |= BIT(nDeviceId);
-
-#ifndef ARM_CORE_CA32
-	vClearInterruptMaskFromISR(PrevStatus);
-#else
-	portRESTORE_INTERRUPTS(PrevStatus);
-#endif
+//	u32 PrevStatus;
+//#ifndef ARM_CORE_CA32
+//	PrevStatus = ulSetInterruptMaskFromISR();
+//#else
+//	PrevStatus = portDISABLE_INTERRUPTS();
+//#endif
+//
+//	wakelock |= BIT(nDeviceId);
+//
+//#ifndef ARM_CORE_CA32
+//	vClearInterruptMaskFromISR(PrevStatus);
+//#else
+//	portRESTORE_INTERRUPTS(PrevStatus);
+//#endif
 }
 
 void pmu_release_wakelock(uint32_t nDeviceId)
 {
-	u32 PrevStatus;
-#ifndef ARM_CORE_CA32
-	PrevStatus = ulSetInterruptMaskFromISR();
-#else
-	PrevStatus = portDISABLE_INTERRUPTS();
-#endif
-
-	wakelock &= ~BIT(nDeviceId);
-
-#ifndef ARM_CORE_CA32
-	vClearInterruptMaskFromISR(PrevStatus);
-#else
-	portRESTORE_INTERRUPTS(PrevStatus);
-#endif
+//	u32 PrevStatus;
+//#ifndef ARM_CORE_CA32
+//	PrevStatus = ulSetInterruptMaskFromISR();
+//#else
+//	PrevStatus = portDISABLE_INTERRUPTS();
+//#endif
+//
+//	wakelock &= ~BIT(nDeviceId);
+//
+//#ifndef ARM_CORE_CA32
+//	vClearInterruptMaskFromISR(PrevStatus);
+//#else
+//	portRESTORE_INTERRUPTS(PrevStatus);
+//#endif
 }
 
 uint32_t pmu_get_wakelock_status(void)

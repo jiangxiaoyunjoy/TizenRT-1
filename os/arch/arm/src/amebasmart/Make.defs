@@ -204,11 +204,8 @@ CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/soc/amebad2/swlib
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/soc/amebad2/misc
 
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/driver/include
-CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/driver/intf
-CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/driver/core
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/api
-CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/wifi_config
-CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/wifi_fast_connect
+CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/wifi/common
 
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/mbed/targets/hal/rtl8730e/
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/mbed/api/
@@ -219,6 +216,8 @@ CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/project/realtek_amebaD2_va0
 
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/os_dep
 CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/os/tizenrt
+
+CFLAGS += -I$(TOPDIR)/board/$(CONFIG_ARCH_BOARD)/src/component/usrcfg/rtl8730e/include
 
 CHIP_ASRCS  =
 CHIP_CSRCS = amebasmart_boot.c
@@ -236,10 +235,10 @@ CHIP_CSRCS += amebasmart_timer_lowerhalf.c
 CHIP_CSRCS += amebasmart_rtc_lowerhalf.c
 CHIP_CSRCS += amebasmart_rtc.c
 CHIP_CSRCS += amebasmart_watchdog_lowerhalf.c
-ifeq ($(CONFIG_I2C),y)
+ifeq ($(CONFIG_AMEBASMART_I2C),y)
 CHIP_CSRCS += amebasmart_i2c.c
 endif
-ifeq ($(CONFIG_SPI),y)
+ifeq ($(CONFIG_AMEBASMART_SPI),y)
 CHIP_CSRCS += amebasmart_spi.c
 endif
 ifeq ($(CONFIG_AMEBASMART_I2S),y)
@@ -256,6 +255,11 @@ ifeq ($(CONFIG_BINARY_SIGNING),y)
 #CMN_CSRCS += amebasmart_signature.c
 endif
 
+ifeq ($(CONFIG_AMEBASMART_BLE),y)
+EXTRA_LIBS += ${TOPDIR}/board/rtl8730e/src/libs/lib_btgap.a
+#endif
+endif
+
 ifeq ($(CONFIG_AMEBASMART_TRUSTZONE),y)
 #CHIP_CSRCS += amebasmart_nsc.c
 
@@ -270,7 +274,8 @@ endif
 # Wifi
 ifeq ($(CONFIG_AMEBASMART_WIFI),y)
 ifeq ($(CONFIG_ARCH_FPU),y)
-#EXTRA_LIBS += $(TOPDIR)/board/
+EXTRA_LIBS += $(TOPDIR)/board/rtl8730e/src/libs/lib_wpa_lite.a
+EXTRA_LIBS += $(TOPDIR)/board/rtl8730e/src/libs/lib_wifi_common.a
 else
 #EXTRA_LIBS += $(TOPDIR)/board/
 endif

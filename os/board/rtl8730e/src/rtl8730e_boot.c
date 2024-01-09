@@ -132,13 +132,23 @@ void board_spi_initialize(void)
 {
 #ifdef CONFIG_SPI
 	struct spi_dev_s *spi;
+#ifdef CONFIG_AMEBASMART_SPI0
+	spi = up_spiinitialize(0);
+#ifdef CONFIG_SPI_USERIO
+	if (spi_uioregister(0, spi) < 0) {
+		lldbg("Failed to register SPI0\n");
+	}
+#endif
+#endif
+#ifdef CONFIG_AMEBASMART_SPI1
 	spi = up_spiinitialize(1);
-
 #ifdef CONFIG_SPI_USERIO
 	if (spi_uioregister(1, spi) < 0) {
 		lldbg("Failed to register SPI1\n");
 	}
 #endif
+#endif
+
 #endif
 }
 
@@ -150,15 +160,52 @@ void board_i2c_initialize(void)
 	int ret;
 	char path[16];
 
+#ifdef CONFIG_AMEBASMART_I2C0
+	bus = 0;
 	snprintf(path, sizeof(path), "/dev/i2c-%d", bus);
 	i2c = up_i2cinitialize(bus);
 #ifdef CONFIG_I2C_USERIO
-	if (i2c) {
+	if (i2c != NULL) {
 		ret = i2c_uioregister(path, i2c);
 		if (ret < 0) {
 			up_i2cuninitialize(i2c);
 		}
+	} else {
+		lldbg("Failed to register I2C\n");
 	}
+#endif
+#endif
+
+#ifdef CONFIG_AMEBASMART_I2C1
+	bus = 1;
+	snprintf(path, sizeof(path), "/dev/i2c-%d", bus);
+	i2c = up_i2cinitialize(bus);
+#ifdef CONFIG_I2C_USERIO
+	if (i2c != NULL) {
+		ret = i2c_uioregister(path, i2c);
+		if (ret < 0) {
+			up_i2cuninitialize(i2c);
+		}
+	} else {
+		lldbg("Failed to register I2C\n");
+	}
+#endif
+#endif
+
+#ifdef CONFIG_AMEBASMART_I2C2
+	bus = 2;
+	snprintf(path, sizeof(path), "/dev/i2c-%d", bus);
+	i2c = up_i2cinitialize(bus);
+#ifdef CONFIG_I2C_USERIO
+	if (i2c != NULL) {
+		ret = i2c_uioregister(path, i2c);
+		if (ret < 0) {
+			up_i2cuninitialize(i2c);
+		}
+	} else {
+		lldbg("Failed to register I2C\n");
+	}
+#endif
 #endif
 #endif
 }
@@ -277,6 +324,28 @@ void amebasmart_memory_initialize(void)
 
 }
 
+#ifdef CONFIG_FTL_ENABLED
+extern u8 ftl_phy_page_num;
+extern u32 ftl_phy_page_start_addr;
+#include "ftl_int.h"
+extern void flash_get_layout_info(u32 type, u32 *start, u32 *end);
+
+void app_ftl_init(void)
+{
+	u32 ftl_start_addr, ftl_end_addr;
+
+	flash_get_layout_info(FTL, &ftl_start_addr, &ftl_end_addr);
+
+	ftl_phy_page_start_addr = ftl_start_addr - SPI_FLASH_BASE;
+	ftl_phy_page_num = (ftl_end_addr - ftl_start_addr +1) / PAGE_SIZE_4K;
+
+	if (SYSCFG_BootFromNor()) {
+		ftl_init(ftl_phy_page_start_addr, ftl_phy_page_num);
+	}
+}
+
+#endif
+
 /****************************************************************************
  * Name: board_initialize
  *
@@ -335,11 +404,20 @@ void board_initialize(void)
 		}
 	}
 #endif
+
+#ifdef CONFIG_FTL_ENABLED
+	app_ftl_init();
+#endif
+
 #ifdef CONFIG_AMEBASMART_WIFI
 	wlan_initialize();
 #endif
-#ifdef CONFIG_AMEBASMART_BLE
-	bt_ipc_api_init_host();
+
+	char km0_application_rev_temp[] = "km0_application_ver_79e92a3_2023/12/18-15:12:03";
+	lldbg("KM4_version %s\n", km0_application_rev_temp);
+
+#ifdef CONFIG_AUDIO_ALC1019
+	rtl8730e_alc1019_initialize(0);
 #endif
 }
 #else

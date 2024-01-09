@@ -7,9 +7,8 @@
 #define UPPER_STACK_VERSION	VERSION_2021
 
 #if defined CONFIG_BT && CONFIG_BT
-#if ((defined CONFIG_BT_AP && CONFIG_BT_AP))
-#define CONFIG_FTL_ENABLED 
-
+#ifndef CONFIG_FTL_ENABLED
+#define CONFIG_FTL_ENABLED
 #endif
 #endif
 

@@ -244,6 +244,27 @@
   * @}
   */
 
+/** @defgroup PINMUX_Special_Pad_definitions
+  * @{
+  */
+#define APAD_NAME_START				_PA_18	/* PA18 & PA19 no pin output in all pkgs */
+#define APAD_NAME_END				_PB_6
+
+#define APAD_MIC_PAD__START			_PA_20
+#define APAD_MIC_PAD_END			_PA_29
+
+#define APAD_MIC_BIAS_PAD_START		_PA_30
+#define APAD_MIC_BIAS_PAD_END		_PB_2
+
+#define APAD_OUT_PAD_START			_PB_3
+#define APAD_OUT_PAD_END			_PB_6
+
+#define SWD_DATA					_PA_13
+#define	SWD_CLK						_PA_14
+/**
+  * @}
+  */
+
 /**
   * @}
   */
@@ -255,7 +276,7 @@ _LONG_CALL_ void PAD_CMD(u8 PinName, u8 NewStatus);
 _LONG_CALL_ void PAD_DrvStrength(u8 PinName, u32 DrvStrength);
 _LONG_CALL_ void PAD_PullCtrl(u8 PinName, u8 PullType);
 _LONG_CALL_ void PAD_SleepPullCtrl(u8 PinName, u8 PullType);
-_LONG_CALL_ void Pinmux_Config(u8 PinName, u32 PinFunc);
+_LONG_CALL_ void _Pinmux_Config(u8 PinName, u32 PinFunc);
 _LONG_CALL_ u32 Pinmux_ConfigGet(u8 PinName);
 _LONG_CALL_ void Pinmux_UartLogCtrl(u32  PinLocation, BOOL   Operation);
 _LONG_CALL_ void Pinmux_SpicCtrl(u32  PinLocation, BOOL Operation);
@@ -316,12 +337,12 @@ void APAD_InputCtrl(u8 PinName, u32 NewState)
 			RTemp = 0x0;
 		}
 	} else {
-		if (PinName < _PA_18 || PinName > _PB_6) {
+		if (PinName < APAD_NAME_START || PinName > APAD_NAME_END) {
 			return;
 		}
 
 		RTemp = HAL_READ32(PINMUX_REG_BASE, REG_PAD_AUD_PAD_CTRL);
-		PadShift = PinName - _PA_18;
+		PadShift = PinName - APAD_NAME_START;
 		if (NewState != DISABLE) {
 			RTemp |= BIT(PadShift);
 		} else {
