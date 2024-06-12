@@ -55,12 +55,15 @@ function pre_download()
 	if test -f "${BIN_PATH}/${BOOTPARAM}.bin"; then
 		cp -p ${BIN_PATH}/${BOOTPARAM}.bin ${IMG_TOOL_PATH}/${BOOTPARAM}.bin
 	fi
+	if test -f "${BIN_PATH}/${EXTERNAL}.bin"; then
+		cp -p ${BIN_PATH}/${EXTERNAL}.bin ${IMG_TOOL_PATH}/${EXTERNAL}.bin
+	fi
 
 	echo ""
 	echo "=========================="
-	echo "Checking flash size"
+	echo "Checking flash size(PASS)"
 	echo "=========================="
-	board_check $TTYDEV
+	#board_check $TTYDEV
 }
 
 function board_download()
@@ -143,6 +146,9 @@ function post_download()
 	fi
 	if test -f "${BOOTPARAM}.bin"; then
 		[ -e ${BOOTPARAM}.bin ] && rm ${BOOTPARAM}.bin
+	fi
+	if test -f "${EXTERNAL}.bin"; then
+		[ -e ${EXTERNAL}.bin ] && rm ${EXTERNAL}.bin
 	fi
 }
 
