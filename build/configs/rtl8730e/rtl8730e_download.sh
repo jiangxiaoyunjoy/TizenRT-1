@@ -83,8 +83,8 @@ function pre_download()
 
 		#echo "${parts[$partidx]}  offset ${a} size ${b}KB"
 	done
-	LAST_IMAGE=${parts[$partidx]}
-	
+	LAST_IMAGE=${EXTERNAL}.bin
+	#echo "$LAST_IMAGE"
 	touch "${IMG_TOOL_PATH}/setting.txt"
 }
 
@@ -100,12 +100,16 @@ function board_download()
 		fi
 		
 		if [[ $TTYDEV == *"ACM"* ]]; then
-			echo "USB download"
+			#echo "USB download"
 			echo "$3" >> setting.txt
 			echo "$2" >> setting.txt
-			if [ "$3" == *"$LAST_IMAGE"* ]; then
+			if [ "$3" == "$LAST_IMAGE" ]; then
+				echo ""
+				echo "=========================="
+				echo "Start USB download"
+				echo "=========================="
 				./upload_image_tool_linux "download" $1
-		fi
+			fi
 		fi
 	fi	
 }
