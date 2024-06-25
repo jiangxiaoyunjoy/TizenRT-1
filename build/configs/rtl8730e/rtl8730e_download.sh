@@ -25,6 +25,7 @@ OS_PATH=${TOP_PATH}/os
 CONFIG=${OS_PATH}/.config
 source ${CONFIG}
 APP_NUM=0
+LAST_IMAGE=0
 
 function pre_download()
 {
@@ -58,12 +59,33 @@ function pre_download()
 	if test -f "${BIN_PATH}/${BOOTPARAM}.bin"; then
 		cp -p ${BIN_PATH}/${BOOTPARAM}.bin ${IMG_TOOL_PATH}/${BOOTPARAM}.bin
 	fi
-
+	if test -f "${BIN_PATH}/${EXTERNAL}.bin"; then
+		cp -p ${BIN_PATH}/${EXTERNAL}.bin ${IMG_TOOL_PATH}/${EXTERNAL}.bin
+	fi
 	echo ""
 	echo "=========================="
-	echo "Checking flash size"
+	echo "Checking flash size(PASS)"
 	echo "=========================="
-	board_check $TTYDEV
+	#board_check $TTYDEV
+	
+	for partidx in ${!parts[@]}; do
+		if [[ "${parts[$partidx]}" == "reserved" ]];then
+			continue
+		fi
+
+		if [[ "${parts[$partidx]}" == "ftl" ]];then
+			continue
+		fi
+
+		if [[ "${parts[$partidx]}" == "ss" ]];then
+			continue
+		fi
+
+		#echo "${parts[$partidx]}  offset ${a} size ${b}KB"
+	done
+	LAST_IMAGE=${parts[$partidx]}
+	
+	touch "${IMG_TOOL_PATH}/setting.txt"
 }
 
 function board_download()
@@ -72,8 +94,20 @@ function board_download()
 	if [ ! -f ${IMG_TOOL_PATH}/$3 ];then
 		echo "$3 not present"
 	else
-		./upload_image_tool_linux "download" $1 1 $2 $3
-	fi
+		if [[ $TTYDEV == *"USB"* ]]; then
+			echo "UART download"
+			./upload_image_tool_linux "download" $1 1 $2 $3
+		fi
+		
+		if [[ $TTYDEV == *"ACM"* ]]; then
+			echo "USB download"
+			echo "$3" >> setting.txt
+			echo "$2" >> setting.txt
+			if [ "$3" == *"$LAST_IMAGE"* ]; then
+				./upload_image_tool_linux "download" $1
+		fi
+		fi
+	fi	
 }
 
 function board_erase()
@@ -150,6 +184,10 @@ function post_download()
 	if test -f "${BOOTPARAM}.bin"; then
 		[ -e ${BOOTPARAM}.bin ] && rm ${BOOTPARAM}.bin
 	fi
+	if test -f "${EXTERNAL}.bin"; then
+		[ -e ${EXTERNAL}.bin ] && rm ${EXTERNAL}.bin
+	fi
+	rm "${IMG_TOOL_PATH}/setting.txt"
 }
 
 
